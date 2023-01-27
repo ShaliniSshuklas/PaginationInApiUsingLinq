@@ -1,0 +1,85 @@
+Pagination :
+
+
+
+
+IndexModel**************:-
+	namespace Setup.PresentationLayer.ViewModel
+         {
+	  public int CurrentPage { get; set; }
+          public int PageSize { get; set; }
+          public string OrderBy { get; set; }
+          public IndexModel()
+          {
+            this.CurrentPage = 1;
+            this.PageSize = 10;
+          }
+         }
+
+Controller****************:-
+        [HttpPost(ApiRouting.User.GetAllUser)]
+        public async Task<IActionResult> GetAll(IndexModel model)
+        {
+            var res = await _userService.GetAll(model);
+            return Ok(res);
+        }
+
+IUserService****************:-
+           	public interface IUserService 
+    		{
+      		  Task<PagedResponse<List<UserViewModel>>> GetAll(IndexModel model);
+    		}
+
+
+
+UserService***************:-
+         public async Task<PagedResponse<List<UserViewModel>>> GetAll(IndexModel model)
+         {
+            var response = new PagedResponse<List<UserViewModel>>();
+            try
+            {
+                var data = await this._uow.GenericRepository<User>().GetAlls();
+                var result = data.ToList();
+                var viewmodel = result.ConvertToApprovalRecordListViewModel().Skip((model.CurrentPage - 1) * model.PageSize).Take(model.PageSize).ToList();
+                response.SetPagedResponseData(viewmodel, model.PageSize, model.CurrentPage, viewmodel.Count());
+                return response;
+            }
+            catch (Exception ex)
+            {
+                throw ex;
+            }
+        }
+
+PagedResponse****************:-
+
+     namespace Setup.Infrastructure.AppConfig
+     {
+       public class PagedResponse<T>
+        {
+        public T Data { get; set; }
+        public int PageSize { get; set; }
+        public int CurrentPage { get; set; }
+        public int TotalRecords { get; set; }
+       }
+    }
+
+SetPagedResponseData****************:-
+
+   namespace Setup.Infrastructure.AppConfig
+   {
+    public static class SetPagedResponse
+    {
+        public static void SetPagedResponseData<T>(
+            this PagedResponse<T> pagedResponse
+            , T data
+            , int pageSize
+            , int currentPage
+            , int totalRecords)
+        {
+            pagedResponse.Data = data;
+            pagedResponse.PageSize = pageSize;
+            pagedResponse.CurrentPage = currentPage;
+            pagedResponse.TotalRecords = totalRecords;
+        }
+     }
+   }
